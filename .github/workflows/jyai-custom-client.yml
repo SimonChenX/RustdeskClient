@@ -1,0 +1,33 @@
+name: JYAI 自编译客户端（自建服务器版）
+
+# 用法：仓库 Actions 页面点 "Run workflow"，或本地用
+#   bash Scripts/client-fork/publish_fork.sh --dispatch
+# 前置：仓库 Variables 里设置 RD_HOST（自建 ID 服务器域名/IP）与 RD_KEY（服务器公钥 id_ed25519.pub）
+# 产物：Actions 页面该次运行的 Artifacts（rustdesk-unsigned-windows-x86_64 / rustdesk-linux-* 等）
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload-tag:
+        description: "产物标签（仅用于命名/发布，留空则用 jyai）"
+        required: false
+        default: "jyai"
+      upload-artifact:
+        description: "是否上传产物（必须为 true 才能在 Actions 页面下载）"
+        required: false
+        type: boolean
+        default: true
+
+# 关键：被调用的 flutter-build.yml 里 generate-sbom 作业要 contents: write，
+# 而调用方（本文件）的权限是它的上限 —— 不写这一行会直接 startup_failure：
+#   "The nested job 'generate-sbom' is requesting 'contents: write', but is only allowed 'contents: read'."
+permissions:
+  contents: write
+
+jobs:
+  build:
+    uses: ./.github/workflows/flutter-build.yml
+    secrets: inherit
+    with:
+      upload-artifact: ${{ inputs.upload-artifact }}
+      upload-tag: ${{ inputs.upload-tag }}
